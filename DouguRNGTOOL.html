@@ -1,7 +1,6 @@
 <html>
 <head>
     <link rel="apple-touch-icon" href="Clipboard 2026:04:20 13.26.png">
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
@@ -15,8 +14,7 @@
             font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text);
             margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
         }
-        button { touch-action: manipulation; cursor: pointer; border: none; transition: opacity 0.1s, background-color 0.2s; }
-        button:active { opacity: 0.6; }
+        button { touch-action: manipulation; cursor: pointer; border: none; }
         
         .header { background: #2c2c2e; padding: 15px 20px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
         .tab-group { display: flex; gap: 10px; }
@@ -25,13 +23,15 @@
 
         .main-display { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .target-date-box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; width: 100%; border: 1px solid #333; }
-        .target-val { font-size: 1.25rem; font-family: monospace; }
+        .target-val { font-size: 1.3rem; font-family: monospace; }
 
         .timer-val { font-size: 5rem; font-weight: 200; font-family: monospace; line-height: 1; margin: 10px 0; }
         .frame-val { font-size: 1.2rem; color: var(--secondary); font-weight: 600; margin-bottom: 20px; }
 
-        .adjust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 400px; margin-bottom: 20px; }
-        .adj-btn { background: #3a3a3c; color: white; padding: 15px 0; border-radius: 10px; font-weight: bold; font-size: 1.1rem; }
+        /* オフセット調整エリアを強調 */
+        .offset-control { background: #1c1c2e; padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 100%; border: 1px solid var(--secondary); }
+        .adjust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; }
+        .adj-btn { background: #3a3a3c; color: white; padding: 15px 0; border-radius: 10px; font-weight: bold; font-size: 1rem; }
 
         .action-area { padding: 0 20px 30px; }
         .btn-start { background: var(--accent); color: white; width: 100%; padding: 20px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; }
@@ -42,57 +42,63 @@
         select { background: #2c2c2e; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         input[type="text"] { background: #2c2c2e; border: 1px solid #444; color: white; padding: 15px; border-radius: 8px; width: 100%; font-size: 1rem; margin-bottom: 10px; }
         
-        .save-control { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-save { background: var(--secondary); color: white; padding: 15px; border-radius: 12px; font-weight: bold; }
-        .btn-update { background: #5856d6; color: white; padding: 15px; border-radius: 12px; font-weight: bold; display: none; }
-
         .preset-item { background: #2c2c2e; padding: 15px; border-radius: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
         .load-btn { background: var(--success); color: white; padding: 12px 20px; border-radius: 10px; font-weight: bold; }
-        .del-btn { color: var(--danger); font-size: 0.8rem; background: none; margin-top: 8px; padding: 0; text-decoration: underline; text-align: left; width: fit-content; display: block; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="tab-group">
-        <div id="tab1" class="tab active" onclick="switchTimer(1)">TIMER 1</div>
-        <div id="tab2" class="tab" onclick="switchTimer(2)">TIMER 2</div>
-    </div>
+    <div class="tab-group"><div id="tab1" class="tab active" onclick="switchTimer(1)">TIMER 1</div><div id="tab2" class="tab" onclick="switchTimer(2)">TIMER 2</div></div>
 </div>
 
 <div class="main-display">
-    <div class="target-date-box"><div style="font-size:0.7rem;color:var(--accent);font-weight:bold;">TARGET CONFIGURATION</div><div id="target-view" class="target-val">---</div></div>
+    <div class="target-date-box"><div style="font-size:0.7rem;color:var(--accent);font-weight:bold;">CURRENT TARGET (SWITCH CLOCK)</div><div id="target-view" class="target-val">---</div></div>
+    
     <div id="disp-ms" class="timer-val">00.00</div>
     <div id="disp-frame" class="frame-val">0 F</div>
-    <div class="adjust-grid">
-        <button class="adj-btn" onclick="adj(-60)">-1s</button><button class="adj-btn" onclick="adj(-15)">-15F</button>
-        <button class="adj-btn" onclick="adj(15)">+15F</button><button class="adj-btn" onclick="adj(60)">+1s</button>
+
+    <div class="offset-control">
+        <div style="font-size:0.75rem; color:var(--secondary); font-weight:bold; margin-bottom:10px; text-align:center;">GLOBAL OFFSET ADJUST (COMMON TO ALL)</div>
+        <div class="adjust-grid">
+            <button class="adj-btn" onclick="adjOffset(-60)">-1s</button><button class="adj-btn" onclick="adjOffset(-15)">-15F</button>
+            <button class="adj-btn" onclick="adjOffset(15)">+15F</button><button class="adj-btn" onclick="adjOffset(60)">+1s</button>
+        </div>
     </div>
 </div>
 
 <div class="action-area"><button id="mainBtn" class="btn-start" onclick="toggleTimer()">START TIMER</button></div>
 
 <div class="preset-section">
-    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">PRESET SAVE / EDIT</div>
-    <input type="text" id="p-name" placeholder="設定名（例：マスターボール）">
+    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">TARGET PRESETS (SAVES CLOCK ONLY)</div>
+    <input type="text" id="p-name" placeholder="目標の名前（例：ウルボ）">
     <div class="date-select-group">
         <select id="sel-y"></select><select id="sel-mo"></select><select id="sel-d"></select>
         <select id="sel-h"></select><select id="sel-mi"></select><select id="sel-s"></select>
     </div>
-    <div class="save-control">
-        <button id="saveBtn" class="btn-save" onclick="savePreset(false)">新規保存</button>
-        <button id="updateBtn" class="btn-update" onclick="savePreset(true)">上書き更新</button>
-    </div>
+    <button class="adj-btn" style="background:var(--secondary); width:100%;" onclick="savePreset()">新規目標を保存</button>
     <div id="list"></div>
 </div>
 
 <script>
     let activeT = 1; let isRunning = false; let currentF = 0; let timerId = null; let lastT = 0; let audioCtx = null;
-    let editingId = null; const FPS = 60;
-    const BEEP_TIMES = [2.0, 1.5, 1.0, 0.5, 0.0]; let soundedIndex = -1;
-    const state = { t1: { f: 60, d: "2026/01/01 00:00:00" }, t2: { f: 60, d: "2026/01/01 00:00:05" } };
+    const FPS = 60; const BEEP_TIMES = [2.0, 1.5, 1.0, 0.5, 0.0]; let soundedIndex = -1;
 
-    window.onload = () => { initSelects(); loadPresets(); switchTimer(1); };
+    // データ構造：各タイマーは「目標の日時」のみを保持
+    const state = { 
+        t1: { d: "2026/01/01 00:00:05", s: 5 }, 
+        t2: { d: "2026/01/01 00:00:10", s: 10 } 
+    };
+    // グローバルオフセット（フレーム単位）
+    let globalOffset = 0;
+
+    window.onload = () => {
+        initSelects();
+        // 記憶されたオフセットを読み込み
+        globalOffset = parseInt(localStorage.getItem('rng_global_offset') || "0");
+        loadPresets();
+        switchTimer(1);
+    };
 
     function initSelects() {
         const createOpts = (id, start, end, pad=false) => {
@@ -103,10 +109,17 @@
                 sel.add(opt);
             }
         };
-        const now = new Date();
         createOpts('sel-y', 2024, 2060); createOpts('sel-mo', 1, 12, true); createOpts('sel-d', 1, 31, true);
         createOpts('sel-h', 0, 23, true); createOpts('sel-mi', 0, 59, true); createOpts('sel-s', 0, 59, true);
-        document.getElementById('sel-y').value = now.getFullYear();
+        document.getElementById('sel-y').value = new Date().getFullYear();
+    }
+
+    // オフセット調整：永続化と再計算を行う
+    function adjOffset(val) {
+        if (isRunning) return;
+        globalOffset += val;
+        localStorage.setItem('rng_global_offset', globalOffset);
+        refreshTimerDisplay();
     }
 
     function switchTimer(n) {
@@ -115,13 +128,19 @@
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab' + n).classList.add('active');
         document.getElementById('target-view').innerText = state['t' + n].d;
-        updateDisplay(state['t' + n].f);
+        refreshTimerDisplay();
     }
 
-    function adj(val) {
-        if (isRunning) return;
-        state['t' + activeT].f = Math.max(0, parseInt(state['t' + activeT].f) + val);
-        updateDisplay(state['t' + activeT].f);
+    // 目標秒数とオフセットから現在のタイマー表示を更新
+    function refreshTimerDisplay() {
+        const targetSec = state['t' + activeT].s;
+        const totalFrames = (targetSec * FPS) + globalOffset;
+        updateDisplay(totalFrames);
+    }
+
+    function updateDisplay(f) {
+        document.getElementById('disp-ms').innerText = Math.max(0, (f / FPS)).toFixed(2);
+        document.getElementById('disp-frame').innerText = Math.floor(Math.max(0, f)) + " F (Offset: " + (globalOffset >= 0 ? "+" : "") + globalOffset + ")";
     }
 
     function playBeep(isFinal) {
@@ -136,15 +155,13 @@
         o.start(); o.stop(audioCtx.currentTime + 0.1);
     }
 
-    function updateDisplay(f) {
-        document.getElementById('disp-ms').innerText = (f / FPS).toFixed(2);
-        document.getElementById('disp-frame').innerText = Math.floor(f) + " F";
-    }
-
     function toggleTimer() {
         if (isRunning) { stop(); return; }
         if (!audioCtx) audioCtx = new AudioContext();
-        currentF = state['t' + activeT].f;
+        
+        // 実行時のフレーム数を計算
+        currentF = (state['t' + activeT].s * FPS) + globalOffset;
+        
         isRunning = true; soundedIndex = -1;
         document.getElementById('mainBtn').innerText = "STOP TIMER";
         document.getElementById('mainBtn').className = "btn-stop";
@@ -161,12 +178,11 @@
             const currentSec = currentF / FPS;
             for (let i = 0; i < BEEP_TIMES.length; i++) {
                 if (i > soundedIndex && currentSec <= BEEP_TIMES[i]) {
-                    playBeep(BEEP_TIMES[i] === 0);
-                    soundedIndex = i;
+                    playBeep(BEEP_TIMES[i] === 0); soundedIndex = i;
                 }
             }
             if (currentF <= 0) { stop(); return; }
-            updateDisplay(Math.max(0, currentF));
+            updateDisplay(currentF);
         }
         timerId = requestAnimationFrame(tick);
     }
@@ -175,46 +191,37 @@
         isRunning = false; cancelAnimationFrame(timerId);
         document.getElementById('mainBtn').innerText = "START TIMER";
         document.getElementById('mainBtn').className = "btn-start";
-        switchTimer(activeT);
+        refreshTimerDisplay();
     }
 
-    function savePreset(isUpdate) {
-        try {
-            const dateStr = `${document.getElementById('sel-y').value}/${document.getElementById('sel-mo').value}/${document.getElementById('sel-d').value} ${document.getElementById('sel-h').value}:${document.getElementById('sel-mi').value}:${document.getElementById('sel-s').value}`;
-            state['t'+activeT].d = dateStr;
-            let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
-            
-            if (isUpdate && editingId) {
-                const idx = ps.findIndex(p => p.id === editingId);
-                if (idx !== -1) {
-                    ps[idx] = { ...ps[idx], name: document.getElementById('p-name').value, t1: {...state.t1}, t2: {...state.t2} };
-                }
-            } else {
-                const newP = { id: Date.now(), name: document.getElementById('p-name').value || "Unnamed", t1: {...state.t1}, t2: {...state.t2} };
-                ps.push(newP);
-            }
-            
-            localStorage.setItem('rng_p_v9', JSON.stringify(ps));
-            loadPresets();
-            
-            const btn = isUpdate ? document.getElementById('updateBtn') : document.getElementById('saveBtn');
-            const originalColor = btn.style.backgroundColor;
-            btn.style.backgroundColor = "var(--success)";
-            setTimeout(() => { btn.style.backgroundColor = originalColor; }, 500);
-        } catch (e) { alert("保存失敗: " + e.message); }
+    function savePreset() {
+        const name = document.getElementById('p-name').value || "Unnamed";
+        const y = document.getElementById('sel-y').value;
+        const mo = document.getElementById('sel-mo').value;
+        const d = document.getElementById('sel-d').value;
+        const h = document.getElementById('sel-h').value;
+        const mi = document.getElementById('sel-mi').value;
+        const s = document.getElementById('sel-s').value;
+        
+        const dateStr = `${y}/${mo}/${d} ${h}:${mi}:${s}`;
+        const newP = { id: Date.now(), name: name, date: dateStr, seconds: parseInt(s) };
+        
+        let ps = JSON.parse(localStorage.getItem('rng_p_v10') || "[]");
+        ps.push(newP);
+        localStorage.setItem('rng_p_v10', JSON.stringify(ps));
+        loadPresets();
     }
 
     function loadPresets() {
         const list = document.getElementById('list');
         try {
-            let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
+            let ps = JSON.parse(localStorage.getItem('rng_p_v10') || "[]");
             list.innerHTML = "";
             ps.reverse().forEach(p => {
                 const item = document.createElement('div');
                 item.className = "preset-item";
                 item.innerHTML = `<div style="flex:1;">
-                    <strong style="font-size:1.1rem;">${p.name}</strong><br><small style="color:var(--sub-text);">T1:${p.t1.f}F / T2:${p.t2.f}F</small>
-                    <button class="del-btn" onclick="deletePreset(${p.id})">削除する</button>
+                    <strong style="font-size:1.1rem;">${p.name}</strong><br><small style="color:var(--sub-text);">${p.date}</small>
                 </div><button class="load-btn" onclick="applyPreset(${p.id})">LOAD</button>`;
                 list.appendChild(item);
             });
@@ -222,29 +229,14 @@
     }
 
     function applyPreset(id) {
-        let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
+        let ps = JSON.parse(localStorage.getItem('rng_p_v10') || "[]");
         const p = ps.find(x => x.id === id);
         if (p) {
-            editingId = id;
-            state.t1 = p.t1; state.t2 = p.t2;
-            document.getElementById('p-name').value = p.name;
-            document.getElementById('updateBtn').style.display = "block";
-            document.getElementById('saveBtn').style.width = "100%"; // 調整
-            switchTimer(activeT);
+            state['t' + activeT] = { d: p.date, s: p.seconds };
+            document.getElementById('target-view').innerText = p.date;
+            refreshTimerDisplay();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }
-
-    function deletePreset(id) {
-        if(!confirm("この設定を完全に削除しますか？")) return;
-        let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
-        ps = ps.filter(x => x.id !== id);
-        localStorage.setItem('rng_p_v9', JSON.stringify(ps));
-        if (editingId === id) {
-            editingId = null;
-            document.getElementById('updateBtn').style.display = "none";
-        }
-        loadPresets();
     }
 </script>
 </body>
