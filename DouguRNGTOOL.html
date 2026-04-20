@@ -26,9 +26,8 @@
         .target-val { font-size: 1.3rem; font-family: monospace; }
 
         .timer-val { font-size: 5rem; font-weight: 200; font-family: monospace; line-height: 1; margin: 10px 0; }
-        .frame-val { font-size: 1.2rem; color: var(--secondary); font-weight: 600; margin-bottom: 20px; }
+        .frame-val { font-size: 1.1rem; color: var(--secondary); font-weight: 600; margin-bottom: 20px; }
 
-        /* オフセット調整エリアを強調 */
         .offset-control { background: #1c1c2e; padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 100%; border: 1px solid var(--secondary); }
         .adjust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; }
         .adj-btn { background: #3a3a3c; color: white; padding: 15px 0; border-radius: 10px; font-weight: bold; font-size: 1rem; }
@@ -37,13 +36,14 @@
         .btn-start { background: var(--accent); color: white; width: 100%; padding: 20px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; }
         .btn-stop { background: var(--danger); color: white; width: 100%; padding: 20px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; }
 
-        .preset-section { background: var(--card); margin: 0 15px 50px; padding: 20px; border-radius: 20px; border: 1px solid #333; }
+        .preset-section { background: var(--card); margin: 0 15px 100px; padding: 20px; border-radius: 20px; border: 1px solid #333; }
         .date-select-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0; }
-        select { background: #2c2c2e; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
+        select { background: #2c2c2e; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; text-align: center; }
         input[type="text"] { background: #2c2c2e; border: 1px solid #444; color: white; padding: 15px; border-radius: 8px; width: 100%; font-size: 1rem; margin-bottom: 10px; }
         
         .preset-item { background: #2c2c2e; padding: 15px; border-radius: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
         .load-btn { background: var(--success); color: white; padding: 12px 20px; border-radius: 10px; font-weight: bold; }
+        .p-meta { font-size: 0.75rem; color: var(--sub-text); margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -53,13 +53,16 @@
 </div>
 
 <div class="main-display">
-    <div class="target-date-box"><div style="font-size:0.7rem;color:var(--accent);font-weight:bold;">CURRENT TARGET (SWITCH CLOCK)</div><div id="target-view" class="target-val">---</div></div>
+    <div class="target-date-box">
+        <div style="font-size:0.7rem;color:var(--accent);font-weight:bold;" id="timer-label">TARGET CLOCK (TIMER 1)</div>
+        <div id="target-view" class="target-val">---</div>
+    </div>
     
     <div id="disp-ms" class="timer-val">00.00</div>
     <div id="disp-frame" class="frame-val">0 F</div>
 
     <div class="offset-control">
-        <div style="font-size:0.75rem; color:var(--secondary); font-weight:bold; margin-bottom:10px; text-align:center;">GLOBAL OFFSET ADJUST (COMMON TO ALL)</div>
+        <div style="font-size:0.75rem; color:var(--secondary); font-weight:bold; margin-bottom:10px; text-align:center;">GLOBAL OFFSET ADJUST</div>
         <div class="adjust-grid">
             <button class="adj-btn" onclick="adjOffset(-60)">-1s</button><button class="adj-btn" onclick="adjOffset(-15)">-15F</button>
             <button class="adj-btn" onclick="adjOffset(15)">+15F</button><button class="adj-btn" onclick="adjOffset(60)">+1s</button>
@@ -70,13 +73,16 @@
 <div class="action-area"><button id="mainBtn" class="btn-start" onclick="toggleTimer()">START TIMER</button></div>
 
 <div class="preset-section">
-    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">TARGET PRESETS (SAVES CLOCK ONLY)</div>
-    <input type="text" id="p-name" placeholder="目標の名前（例：ウルボ）">
+    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">PRESET SAVE (T1 & T2 SET)</div>
+    <input type="text" id="p-name" placeholder="セットの名前（例：ウルボ調整）">
+    
+    <div style="font-size:0.7rem; color:var(--sub-text); margin-top:10px;">編集中のタイマー日時:</div>
     <div class="date-select-group">
-        <select id="sel-y"></select><select id="sel-mo"></select><select id="sel-d"></select>
-        <select id="sel-h"></select><select id="sel-mi"></select><select id="sel-s"></select>
+        <select id="sel-y" onchange="syncFromUI()"></select><select id="sel-mo" onchange="syncFromUI()"></select><select id="sel-d" onchange="syncFromUI()"></select>
+        <select id="sel-h" onchange="syncFromUI()"></select><select id="sel-mi" onchange="syncFromUI()"></select><select id="sel-s" onchange="syncFromUI()"></select>
     </div>
-    <button class="adj-btn" style="background:var(--secondary); width:100%;" onclick="savePreset()">新規目標を保存</button>
+    
+    <button class="adj-btn" style="background:var(--secondary); width:100%;" onclick="savePreset()">T1・T2をセットで保存</button>
     <div id="list"></div>
 </div>
 
@@ -84,20 +90,18 @@
     let activeT = 1; let isRunning = false; let currentF = 0; let timerId = null; let lastT = 0; let audioCtx = null;
     const FPS = 60; const BEEP_TIMES = [2.0, 1.5, 1.0, 0.5, 0.0]; let soundedIndex = -1;
 
-    // データ構造：各タイマーは「目標の日時」のみを保持
-    const state = { 
+    // Timer 1 と Timer 2 の独立した状態
+    let state = { 
         t1: { d: "2026/01/01 00:00:05", s: 5 }, 
         t2: { d: "2026/01/01 00:00:10", s: 10 } 
     };
-    // グローバルオフセット（フレーム単位）
     let globalOffset = 0;
 
     window.onload = () => {
         initSelects();
-        // 記憶されたオフセットを読み込み
         globalOffset = parseInt(localStorage.getItem('rng_global_offset') || "0");
         loadPresets();
-        switchTimer(1);
+        updateUIFromState(); // 初期表示
     };
 
     function initSelects() {
@@ -111,10 +115,41 @@
         };
         createOpts('sel-y', 2024, 2060); createOpts('sel-mo', 1, 12, true); createOpts('sel-d', 1, 31, true);
         createOpts('sel-h', 0, 23, true); createOpts('sel-mi', 0, 59, true); createOpts('sel-s', 0, 59, true);
-        document.getElementById('sel-y').value = new Date().getFullYear();
     }
 
-    // オフセット調整：永続化と再計算を行う
+    // UIのプルダウンから現在のタイマー状態を更新
+    function syncFromUI() {
+        const y = document.getElementById('sel-y').value;
+        const mo = document.getElementById('sel-mo').value;
+        const d = document.getElementById('sel-d').value;
+        const h = document.getElementById('sel-h').value;
+        const mi = document.getElementById('sel-mi').value;
+        const s = document.getElementById('sel-s').value;
+        
+        const dateStr = `${y}/${mo}/${d} ${h}:${mi}:${s}`;
+        state['t' + activeT] = { d: dateStr, s: parseInt(s) };
+        
+        document.getElementById('target-view').innerText = dateStr;
+        refreshTimerDisplay();
+    }
+
+    // 現在の状態をUIのプルダウンに反映
+    function updateUIFromState() {
+        const target = state['t' + activeT];
+        const parts = target.d.match(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+):(\d+)/);
+        if (parts) {
+            document.getElementById('sel-y').value = parts[1];
+            document.getElementById('sel-mo').value = parts[2];
+            document.getElementById('sel-d').value = parts[3];
+            document.getElementById('sel-h').value = parts[4];
+            document.getElementById('sel-mi').value = parts[5];
+            document.getElementById('sel-s').value = parts[6];
+        }
+        document.getElementById('target-view').innerText = target.d;
+        document.getElementById('timer-label').innerText = "TARGET CLOCK (TIMER " + activeT + ")";
+        refreshTimerDisplay();
+    }
+
     function adjOffset(val) {
         if (isRunning) return;
         globalOffset += val;
@@ -127,14 +162,11 @@
         activeT = n;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab' + n).classList.add('active');
-        document.getElementById('target-view').innerText = state['t' + n].d;
-        refreshTimerDisplay();
+        updateUIFromState();
     }
 
-    // 目標秒数とオフセットから現在のタイマー表示を更新
     function refreshTimerDisplay() {
-        const targetSec = state['t' + activeT].s;
-        const totalFrames = (targetSec * FPS) + globalOffset;
+        const totalFrames = (state['t' + activeT].s * FPS) + globalOffset;
         updateDisplay(totalFrames);
     }
 
@@ -158,10 +190,7 @@
     function toggleTimer() {
         if (isRunning) { stop(); return; }
         if (!audioCtx) audioCtx = new AudioContext();
-        
-        // 実行時のフレーム数を計算
         currentF = (state['t' + activeT].s * FPS) + globalOffset;
-        
         isRunning = true; soundedIndex = -1;
         document.getElementById('mainBtn').innerText = "STOP TIMER";
         document.getElementById('mainBtn').className = "btn-stop";
@@ -195,33 +224,33 @@
     }
 
     function savePreset() {
-        const name = document.getElementById('p-name').value || "Unnamed";
-        const y = document.getElementById('sel-y').value;
-        const mo = document.getElementById('sel-mo').value;
-        const d = document.getElementById('sel-d').value;
-        const h = document.getElementById('sel-h').value;
-        const mi = document.getElementById('sel-mi').value;
-        const s = document.getElementById('sel-s').value;
+        const name = document.getElementById('p-name').value || "Unnamed Set";
+        // 両方のタイマーの状態を保存
+        const newP = { 
+            id: Date.now(), 
+            name: name, 
+            t1: JSON.parse(JSON.stringify(state.t1)), 
+            t2: JSON.parse(JSON.stringify(state.t2)) 
+        };
         
-        const dateStr = `${y}/${mo}/${d} ${h}:${mi}:${s}`;
-        const newP = { id: Date.now(), name: name, date: dateStr, seconds: parseInt(s) };
-        
-        let ps = JSON.parse(localStorage.getItem('rng_p_v10') || "[]");
+        let ps = JSON.parse(localStorage.getItem('rng_p_v11') || "[]");
         ps.push(newP);
-        localStorage.setItem('rng_p_v10', JSON.stringify(ps));
+        localStorage.setItem('rng_p_v11', JSON.stringify(ps));
         loadPresets();
     }
 
     function loadPresets() {
         const list = document.getElementById('list');
         try {
-            let ps = JSON.parse(localStorage.getItem('rng_p_v10') || "[]");
+            let ps = JSON.parse(localStorage.getItem('rng_p_v11') || "[]");
             list.innerHTML = "";
             ps.reverse().forEach(p => {
                 const item = document.createElement('div');
                 item.className = "preset-item";
                 item.innerHTML = `<div style="flex:1;">
-                    <strong style="font-size:1.1rem;">${p.name}</strong><br><small style="color:var(--sub-text);">${p.date}</small>
+                    <strong>${p.name}</strong>
+                    <div class="p-meta">T1: ${p.t1.d}</div>
+                    <div class="p-meta">T2: ${p.t2.d}</div>
                 </div><button class="load-btn" onclick="applyPreset(${p.id})">LOAD</button>`;
                 list.appendChild(item);
             });
@@ -229,13 +258,12 @@
     }
 
     function applyPreset(id) {
-        let ps = JSON.parse(localStorage.getItem('rng_p_v10') || "[]");
+        let ps = JSON.parse(localStorage.getItem('rng_p_v11') || "[]");
         const p = ps.find(x => x.id === id);
         if (p) {
-            state['t' + activeT] = { d: p.date, s: p.seconds };
-            document.getElementById('target-view').innerText = p.date;
-            refreshTimerDisplay();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            state.t1 = p.t1; state.t2 = p.t2;
+            updateUIFromState();
+            alert("T1 & T2 設定をロードしました");
         }
     }
 </script>
