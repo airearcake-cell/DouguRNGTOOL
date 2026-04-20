@@ -114,8 +114,13 @@
                 sel.add(opt);
             }
         };
-        createOpts('sel-y', 2024, 2060); createOpts('sel-mo', 1, 12, true); createOpts('sel-d', 1, 31, true);
+        // Switch本体の設定可能範囲（2000年〜2060年）に同期
+        createOpts('sel-y', 2000, 2060); 
+        createOpts('sel-mo', 1, 12, true); createOpts('sel-d', 1, 31, true);
         createOpts('sel-h', 0, 23, true); createOpts('sel-mi', 0, 59, true); createOpts('sel-s', 0, 59, true);
+        
+        // 初期値として現在のシステム年をセット
+        document.getElementById('sel-y').value = new Date().getFullYear();
     }
 
     function syncFromUI() {
