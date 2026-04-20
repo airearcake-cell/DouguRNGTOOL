@@ -5,45 +5,61 @@
     <style>
         :root {
             --bg: #000000; --card: #1c1c1e; --accent: #0a84ff;
-            --secondary: #5e5ce6; --success: #34c759; --text: #ffffff; --sub-text: #8e8e93;
+            --secondary: #5e5ce6; --success: #34c759; --danger: #ff453a;
+            --text: #ffffff; --sub-text: #8e8e93;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text);
             margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
         }
-        button { touch-action: manipulation; cursor: pointer; border: none; }
+        button { touch-action: manipulation; cursor: pointer; border: none; transition: opacity 0.1s, background-color 0.2s; }
+        button:active { opacity: 0.6; }
+        
         .header { background: #2c2c2e; padding: 15px 20px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
         .tab-group { display: flex; gap: 10px; }
         .tab { flex: 1; padding: 12px; text-align: center; border-radius: 8px; font-weight: bold; background: #3a3a3c; color: var(--sub-text); }
         .tab.active { background: var(--accent); color: white; }
+
         .main-display { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .target-date-box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; width: 100%; border: 1px solid #333; }
         .target-val { font-size: 1.25rem; font-family: monospace; }
+
         .timer-val { font-size: 5rem; font-weight: 200; font-family: monospace; line-height: 1; margin: 10px 0; }
         .frame-val { font-size: 1.2rem; color: var(--secondary); font-weight: 600; margin-bottom: 20px; }
+
         .adjust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 400px; margin-bottom: 20px; }
         .adj-btn { background: #3a3a3c; color: white; padding: 15px 0; border-radius: 10px; font-weight: bold; font-size: 1.1rem; }
+
+        .action-area { padding: 0 20px 30px; }
         .btn-start { background: var(--accent); color: white; width: 100%; padding: 20px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; }
-        .btn-stop { background: #ff453a; color: white; width: 100%; padding: 20px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; }
+        .btn-stop { background: var(--danger); color: white; width: 100%; padding: 20px; border-radius: 16px; font-size: 1.5rem; font-weight: bold; }
+
         .preset-section { background: var(--card); margin: 0 15px 50px; padding: 20px; border-radius: 20px; border: 1px solid #333; }
         .date-select-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0; }
         select { background: #2c2c2e; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
         input[type="text"] { background: #2c2c2e; border: 1px solid #444; color: white; padding: 15px; border-radius: 8px; width: 100%; font-size: 1rem; margin-bottom: 10px; }
-        .btn-save { background: var(--secondary); color: white; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; }
+        
+        .save-control { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-save { background: var(--secondary); color: white; padding: 15px; border-radius: 12px; font-weight: bold; }
+        .btn-update { background: #5856d6; color: white; padding: 15px; border-radius: 12px; font-weight: bold; display: none; }
+
         .preset-item { background: #2c2c2e; padding: 15px; border-radius: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
         .load-btn { background: var(--success); color: white; padding: 12px 20px; border-radius: 10px; font-weight: bold; }
-        .backup-area { margin-top: 20px; padding: 10px; background: #111; border-radius: 8px; display: none; }
+        .del-btn { color: var(--danger); font-size: 0.8rem; background: none; margin-top: 8px; padding: 0; text-decoration: underline; text-align: left; width: fit-content; display: block; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="tab-group"><div id="tab1" class="tab active" onclick="switchTimer(1)">TIMER 1</div><div id="tab2" class="tab" onclick="switchTimer(2)">TIMER 2</div></div>
+    <div class="tab-group">
+        <div id="tab1" class="tab active" onclick="switchTimer(1)">TIMER 1</div>
+        <div id="tab2" class="tab" onclick="switchTimer(2)">TIMER 2</div>
+    </div>
 </div>
 
 <div class="main-display">
-    <div class="target-date-box"><div style="font-size:0.7rem;color:var(--accent);font-weight:bold;">TARGET CONFIG</div><div id="target-view" class="target-val">---</div></div>
+    <div class="target-date-box"><div style="font-size:0.7rem;color:var(--accent);font-weight:bold;">TARGET CONFIGURATION</div><div id="target-view" class="target-val">---</div></div>
     <div id="disp-ms" class="timer-val">00.00</div>
     <div id="disp-frame" class="frame-val">0 F</div>
     <div class="adjust-grid">
@@ -55,24 +71,22 @@
 <div class="action-area"><button id="mainBtn" class="btn-start" onclick="toggleTimer()">START TIMER</button></div>
 
 <div class="preset-section">
-    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">PRESET SAVE / LOAD</div>
-    <input type="text" id="p-name" placeholder="設定名">
+    <div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">PRESET SAVE / EDIT</div>
+    <input type="text" id="p-name" placeholder="設定名（例：マスターボール）">
     <div class="date-select-group">
         <select id="sel-y"></select><select id="sel-mo"></select><select id="sel-d"></select>
         <select id="sel-h"></select><select id="sel-mi"></select><select id="sel-s"></select>
     </div>
-    <button id="saveBtn" class="btn-save" onclick="savePreset()">保存する</button>
-    
-    <div id="list"></div>
-    
-    <div id="error-fallback" style="margin-top:20px; display:none; font-size:0.8rem;">
-        <p style="color:red;">⚠️ セキュリティ制限により自動保存が遮断されました。解決にはGitHub Gist等での公開を推奨しますが、暫定的に設定内容を以下に表示します。</p>
-        <textarea id="backup-text" style="width:100%; height:60px; background:#000; color:#fff; font-family:monospace; font-size:0.7rem;"></textarea>
+    <div class="save-control">
+        <button id="saveBtn" class="btn-save" onclick="savePreset(false)">新規保存</button>
+        <button id="updateBtn" class="btn-update" onclick="savePreset(true)">上書き更新</button>
     </div>
+    <div id="list"></div>
 </div>
 
 <script>
-    let activeT = 1; let isRunning = false; let currentF = 0; let timerId = null; let lastT = 0; let audioCtx = null; const FPS = 60;
+    let activeT = 1; let isRunning = false; let currentF = 0; let timerId = null; let lastT = 0; let audioCtx = null;
+    let editingId = null; const FPS = 60;
     const BEEP_TIMES = [2.0, 1.5, 1.0, 0.5, 0.0]; let soundedIndex = -1;
     const state = { t1: { f: 60, d: "2026/01/01 00:00:00" }, t2: { f: 60, d: "2026/01/01 00:00:05" } };
 
@@ -162,49 +176,73 @@
         switchTimer(activeT);
     }
 
-    function savePreset() {
+    function savePreset(isUpdate) {
         try {
             const dateStr = `${document.getElementById('sel-y').value}/${document.getElementById('sel-mo').value}/${document.getElementById('sel-d').value} ${document.getElementById('sel-h').value}:${document.getElementById('sel-mi').value}:${document.getElementById('sel-s').value}`;
             state['t'+activeT].d = dateStr;
-            const p = { id: Date.now(), name: document.getElementById('p-name').value || "Unnamed", t1: {...state.t1}, t2: {...state.t2} };
+            let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
             
-            // ローカルストレージ
-            let ps = JSON.parse(localStorage.getItem('rng_p_v8') || "[]");
-            ps.push(p);
-            localStorage.setItem('rng_p_v8', JSON.stringify(ps));
+            if (isUpdate && editingId) {
+                const idx = ps.findIndex(p => p.id === editingId);
+                if (idx !== -1) {
+                    ps[idx] = { ...ps[idx], name: document.getElementById('p-name').value, t1: {...state.t1}, t2: {...state.t2} };
+                }
+            } else {
+                const newP = { id: Date.now(), name: document.getElementById('p-name').value || "Unnamed", t1: {...state.t1}, t2: {...state.t2} };
+                ps.push(newP);
+            }
             
+            localStorage.setItem('rng_p_v9', JSON.stringify(ps));
             loadPresets();
-            alert("保存しました");
-        } catch (e) {
-            // セキュリティエラー時の表示
-            document.getElementById('error-fallback').style.display = 'block';
-            document.getElementById('backup-text').value = JSON.stringify(state);
-            alert("セキュリティ制限により、この環境では自動保存ができません。\n解決には解決策1(GitHub Gist等)をお試しください。");
-        }
+            
+            const btn = isUpdate ? document.getElementById('updateBtn') : document.getElementById('saveBtn');
+            const originalColor = btn.style.backgroundColor;
+            btn.style.backgroundColor = "var(--success)";
+            setTimeout(() => { btn.style.backgroundColor = originalColor; }, 500);
+        } catch (e) { alert("保存失敗: " + e.message); }
     }
 
     function loadPresets() {
         const list = document.getElementById('list');
         try {
-            let ps = JSON.parse(localStorage.getItem('rng_p_v8') || "[]");
+            let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
             list.innerHTML = "";
             ps.reverse().forEach(p => {
                 const item = document.createElement('div');
                 item.className = "preset-item";
-                item.innerHTML = `<div><strong>${p.name}</strong><br><small>T1:${p.t1.f} / T2:${p.t2.f}</small></div><button class="load-btn" onclick="applyPreset(${p.id})">LOAD</button>`;
+                item.innerHTML = `<div style="flex:1;">
+                    <strong style="font-size:1.1rem;">${p.name}</strong><br><small style="color:var(--sub-text);">T1:${p.t1.f}F / T2:${p.t2.f}F</small>
+                    <button class="del-btn" onclick="deletePreset(${p.id})">削除する</button>
+                </div><button class="load-btn" onclick="applyPreset(${p.id})">LOAD</button>`;
                 list.appendChild(item);
             });
         } catch (e) { }
     }
 
     function applyPreset(id) {
-        let ps = JSON.parse(localStorage.getItem('rng_p_v8') || "[]");
+        let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
         const p = ps.find(x => x.id === id);
         if (p) {
+            editingId = id;
             state.t1 = p.t1; state.t2 = p.t2;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('updateBtn').style.display = "block";
+            document.getElementById('saveBtn').style.width = "100%"; // 調整
             switchTimer(activeT);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+    }
+
+    function deletePreset(id) {
+        if(!confirm("この設定を完全に削除しますか？")) return;
+        let ps = JSON.parse(localStorage.getItem('rng_p_v9') || "[]");
+        ps = ps.filter(x => x.id !== id);
+        localStorage.setItem('rng_p_v9', JSON.stringify(ps));
+        if (editingId === id) {
+            editingId = null;
+            document.getElementById('updateBtn').style.display = "none";
+        }
+        loadPresets();
     }
 </script>
 </body>
